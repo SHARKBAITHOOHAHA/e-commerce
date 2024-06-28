@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { Suspense, useState, useTransition } from "react";
 import { CardWrapper } from "./card-wrapper";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -17,8 +17,15 @@ import {
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { register } from "@/actions/register";
+import { FormError } from "../form_error";
+import { FormSuccess } from "../form_success";
+import { useRouter } from "next/navigation";
+import { useStore } from "@/store/store";
 
 export const RegisterForm = () => {
+  const setDomain = useStore((state) => state.updateDomain);
+
+  const router = useRouter();
   const [error, setError] = useState<string | undefined>("");
   const [success, setSuccess] = useState<string | undefined>("");
   const [isPending, startTransition] = useTransition();
@@ -28,18 +35,24 @@ export const RegisterForm = () => {
       email: "",
       password: "",
       name: "",
+      domain: "",
     },
   });
 
   const onSubmit = (values: z.infer<typeof RegisterSchema>) => {
     setError("");
     setSuccess("");
+
     startTransition(async () => {
       register(values).then((data) => {
         setError(data.error);
-        setError(data.success);
+
+        console.log("from transition", data.success);
+        setDomain(data.success);
       });
     });
+
+    router.push("/dashboard");
   };
 
   return (
@@ -69,6 +82,7 @@ export const RegisterForm = () => {
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="email"
@@ -105,7 +119,27 @@ export const RegisterForm = () => {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="domain"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Domain</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      disabled={isPending}
+                      placeholder="example"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
+
+          <FormError message={error} />
+          <FormSuccess message={success} />
           <Button type="submit" className="w-full" disabled={isPending}>
             Register
           </Button>

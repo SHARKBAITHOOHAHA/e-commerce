@@ -17,8 +17,15 @@ import {
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { login } from "@/actions/login";
+import { FormError } from "../form_error";
+import { FormSuccess } from "../form_success";
+import { useStore } from "@/store/store";
+import { useRouter } from "next/navigation";
 
 export const LoginForm = () => {
+  const setDomain = useStore((state) => state.updateDomain);
+  const router = useRouter();
+
   const [error, setError] = useState<string | undefined>("");
   const [success, setSuccess] = useState<string | undefined>("");
   const [isPending, startTransition] = useTransition();
@@ -33,12 +40,16 @@ export const LoginForm = () => {
   const onSubmit = (values: z.infer<typeof LoginSchema>) => {
     setError("");
     setSuccess("");
+
     startTransition(async () => {
       login(values).then((data) => {
         setError(data.error);
-        setError(data.success);
+        setSuccess(data.success);
+        setDomain(data.success);
       });
     });
+
+    router.push("/dashboard");
   };
 
   return (
@@ -88,6 +99,8 @@ export const LoginForm = () => {
               )}
             />
           </div>
+          <FormError message={error} />
+          <FormSuccess message={success} />
           <Button type="submit" className="w-full" disabled={isPending}>
             Login
           </Button>
